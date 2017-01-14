@@ -1,0 +1,58 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse, quietly = T)
+```
+
+```{r read files}
+fnames <- c(
+  "https://www2.ed.gov/programs/osepidea/618-data/state-level-data-files/part-b-data/dispute-resolution/bdispres2014-15.csv",
+  "https://www2.ed.gov/programs/osepidea/618-data/state-level-data-files/part-b-data/dispute-resolution/bdispres2013-14.csv", 
+  "https://www2.ed.gov/programs/osepidea/618-data/state-level-data-files/part-b-data/dispute-resolution/bdispres2012-13.csv"#,
+  # Having trouble reading in the first row with these.
+  #"https://www2.ed.gov/programs/osepidea/618-data/state-level-data-files/part-b-data/dispute-resolution/bdispres2011-12.csv",
+  #"https://www2.ed.gov/programs/osepidea/618-data/state-level-data-files/part-b-data/dispute-resolution/bdispres2010-11.csv"
+)
+
+# Read files
+allfiles <- lapply(fnames, function(x) {read_csv(
+  x, 
+  skip = 4, 
+  col_types = cols(.default = "c"), 
+  n_max = 61
+  )})
+
+# Combine and convert to tidy format
+comb <- bind_rows(allfiles) %>%
+  gather(category, total, -c(Year, State)) %>%
+  mutate(total = as.numeric(total))
+```
+
+```{r by_state}
+# Total due process complains in 14-15 by state
+by_state <- comb %>%
+  filter(
+    Year     == "2014-2015", 
+    category == "Due Process Complaints (DPC) Total (3)"
+    ) %>%
+  arrange(desc(total))
+
+ggplot(data = by_state, aes(x = State, y = total)) +
+  geom_bar(stat = "identity") +
+  coord_flip()
+```
+
+```{r}
+ggplot(data = filter(
+  comb,
+  category == "Due Process Complaints (DPC) Total (3)"),
+  aes(x = State, y = total)
+  ) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  facet_wrap(~ Year)
+```
+
