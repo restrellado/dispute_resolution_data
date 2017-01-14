@@ -31,28 +31,57 @@ comb <- bind_rows(allfiles) %>%
   mutate(total = as.numeric(total))
 ```
 
-```{r by_state}
+```{r by state in 14-15}
 # Total due process complains in 14-15 by state
-by_state <- comb %>%
+by_state_14 <- comb %>%
   filter(
     Year     == "2014-2015", 
     category == "Due Process Complaints (DPC) Total (3)"
     ) %>%
   arrange(desc(total))
 
-ggplot(data = by_state, aes(x = State, y = total)) +
+ggplot(data = by_state_14, aes(x = State, y = total)) +
   geom_bar(stat = "identity") +
   coord_flip()
 ```
 
+```{r by state in 13-14}
+# Total due process complains in 13-14 by state
+by_state_13 <- comb %>%
+  filter(
+    Year     == "2013-2014", 
+    category == "Due Process Complaints (DPC) Total (3)"
+    ) %>%
+  arrange(desc(total))
+```
+
+```{r by state in 12-13}
+# Total due process complains in 12-13 by state
+by_state_12 <- comb %>%
+  filter(
+    Year     == "2012-2013", 
+    category == "Due Process Complaints (DPC) Total (3)"
+    ) %>%
+  arrange(desc(total))
+```
+
 ```{r}
 ggplot(data = filter(
-  comb,
-  category == "Due Process Complaints (DPC) Total (3)"),
-  aes(x = State, y = total)
-  ) +
-  geom_bar(stat = "identity") +
-  coord_flip() +
-  facet_wrap(~ Year)
+  comb, 
+  category == "Due Process Complaints (DPC) Total (3)"), 
+  aes(x = Year, y = total)) +
+  geom_boxplot()
+```
+
+```{r}
+# TODO Need to find a better way to explore year to year
+#ggplot(data = filter(
+#  comb,
+#  category == "Due Process Complaints (DPC) Total (3)"),
+#  aes(x = State, y = total)
+#  ) +
+#  geom_bar(stat = "identity") +
+#  coord_flip() +
+#  facet_wrap(~ Year)
 ```
 
