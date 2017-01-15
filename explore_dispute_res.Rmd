@@ -66,11 +66,15 @@ by_state_12 <- comb %>%
 ```
 
 ```{r}
-ggplot(data = filter(
+# What is the median number of due process complaints?
+p <- ggplot(data = filter(
   comb, 
   category == "Due Process Complaints (DPC) Total (3)"), 
   aes(x = Year, y = total)) +
   geom_boxplot()
+
+# Zoom in on totals of less than 500
+p + coord_cartesian(ylim = c(0, 500))
 ```
 
 ```{r}
@@ -85,3 +89,35 @@ ggplot(data = filter(
 #  facet_wrap(~ Year)
 ```
 
+```{r mediation agreements}
+# What is the relationship between mediations held and mediation agreements?
+# This looks just at mediations relating to due process hearings.
+med <- comb %>%
+  filter(
+    category == "Mediations Held Related to Due Process Complaints(2.1a)" | 
+    category == "Mediation Agreements Related to Due Process Complaints (2.1ai)"
+  ) %>%
+  spread(key = category, value = total)
+
+med_plot <- ggplot(data = med) +
+  geom_point(aes(
+    x = `Mediations Held Related to Due Process Complaints(2.1a)`, 
+    y = `Mediation Agreements Related to Due Process Complaints (2.1ai)`
+  ), 
+    position = "jitter",
+    alpha = .50) + 
+  geom_smooth(aes(
+  x = `Mediations Held Related to Due Process Complaints(2.1a)`, 
+  y = `Mediation Agreements Related to Due Process Complaints (2.1ai)`
+  )) +
+  facet_wrap(~ Year) +
+  labs(
+    title    = "Mediations Held vs. Mediation Agreements",
+    subtitle = "Dataset includes only mediations related to due process complaints.",
+    x        = "Mediations held relating to due process", 
+    y        = "Agreements reached"
+    )
+
+# Zoom in on x < 1000 and 6 < 500
+med_plot + coord_cartesian(xlim = c(0, 1000), ylim = c(0, 500))
+```
