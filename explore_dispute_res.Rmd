@@ -3,16 +3,23 @@ title: "Dispute Resolution: Exploratory Analysis"
 output: html_notebook
 ---
 
+# Initial Questions 
+
+Are there any interesting patterns in variation in any of the variables? 
+
 ```{r}
 library(tidyverse, verbose = T)
 library(stringr, verbose = T)
 ```
+
+First, we'll read in the data and combine the 2012 through 2015 datasets into one dataframe. For now, we won't `gather` up the variables so that we can explore the variation in each variable. 
 
 ```{r read files}
 fnames <- c(
   "https://www2.ed.gov/programs/osepidea/618-data/state-level-data-files/part-b-data/dispute-resolution/bdispres2014-15.csv",
   "https://www2.ed.gov/programs/osepidea/618-data/state-level-data-files/part-b-data/dispute-resolution/bdispres2013-14.csv", 
   "https://www2.ed.gov/programs/osepidea/618-data/state-level-data-files/part-b-data/dispute-resolution/bdispres2012-13.csv"#,
+  
   # Having trouble reading in the first row with these.
   #"https://www2.ed.gov/programs/osepidea/618-data/state-level-data-files/part-b-data/dispute-resolution/bdispres2011-12.csv",
   #"https://www2.ed.gov/programs/osepidea/618-data/state-level-data-files/part-b-data/dispute-resolution/bdispres2010-11.csv"
@@ -22,17 +29,15 @@ fnames <- c(
 allfiles <- lapply(fnames, function(x) {read_csv(
   x, 
   skip = 4, 
-  col_types = cols(.default = "c"), 
+  col_types = cols(Year = col_character()), 
   n_max = 61
   )})
 
-# Combine and convert to tidy format
-comb <- bind_rows(allfiles) %>%
-  gather(category, total, -c(Year, State)) %>%
-  mutate(total = as.numeric(total))
+# Combine
+comb <- bind_rows(allfiles)
 ```
 
-Clean up and simplify the column names. 
+Let's clean up the variable names so they are a little more readable. They are still a little long, but we can at least remove the codes and parenthesis that are in the original datasets. 
 
 ```{r}
 cnames <- names(comb) %>% 
@@ -52,6 +57,64 @@ cnames <- str_trim(cnames, "right")
 names(comb) <- cnames
 ```
 
+Let's verify that we have usable classes for each of the variables. 
+
+```{r}
+str(comb)
+```
+
+Here are the counts for the number of observations in each year: 
+
+```{r}
+count(comb, Year)
+```
+
+There are some really strange values, which might indicate some data errors on the high end. 
+
+```{r}
+comb1415 <- comb %>% filter(Year == "2014-2015")
+sapply(comb1415[, 3:length(names(comb1415))], function(x) {range(x)})
+```
+
+Let's gather up the variables into one category for just the 2014-2015 year so we can explore the variation in each one. 
+
+```{r}
+g_comb1415 <- comb %>% 
+  filter(Year == "2014-2015") %>%
+  gather(category, total, -c(Year, State))
+```
+
+Let's further explore the strange high values in some of the categories. The 
+outliers are so high and so different from the the rest of the value that it 
+obscures the boxplots so we're going to zoom in to `total` values of 5000 or less.
+
+For most categories, the median count across all states do not give a good summary of any one state's totals. Most categories have states whose totals are uncharacteristically high for that category. 
+
+```{r}
+# TODO Label max values for each category with the state name
+ggplot(data = g_comb1415) +
+  geom_boxplot(aes(reorder(category, total, FUN = max), y = total)) + 
+  coord_flip(ylim = c(0, 5000)) + 
+  labs(
+    title = "Distribution of Category Totals", 
+    subtitle = "Data: 2014-2015 Dispute Resolution", 
+    x = "", 
+    y = ""
+    ) + 
+  annotate(
+    "text", 
+    x = g_comb1415$category, 
+    y = max(g_comb1415$total[category]), 
+    label = "test")
+```
+
+First let's plot the variation in each variable.
+
+```{r}
+ggplot(data = g_comb1415, aes(x = total)) + 
+  geom_histogram(binwidth = 15) +
+  facet_wrap(~ category)
+```
 
 ```{r by state in 14-15}
 # Total due process complains in 14-15 by state
