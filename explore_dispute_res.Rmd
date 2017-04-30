@@ -1,10 +1,11 @@
 ---
-title: "R Notebook"
+title: "Dispute Resolution: Exploratory Analysis"
 output: html_notebook
 ---
 
 ```{r}
-library(tidyverse, quietly = T)
+library(tidyverse, verbose = T)
+library(stringr, verbose = T)
 ```
 
 ```{r read files}
@@ -31,6 +32,27 @@ comb <- bind_rows(allfiles) %>%
   mutate(total = as.numeric(total))
 ```
 
+Clean up and simplify the column names. 
+
+```{r}
+cnames <- names(comb) %>% 
+  str_replace_all("\\(", "") %>% 
+  str_replace_all("\\)", "") 
+
+for (i in 3:length(cnames)) {
+ str_sub(
+  cnames[i],
+  str_locate(cnames[i], regex("[0-9]"))[1, 1], 
+  str_length(cnames[i])
+  ) <- ""
+}
+
+cnames <- str_trim(cnames, "right")
+
+names(comb) <- cnames
+```
+
+
 ```{r by state in 14-15}
 # Total due process complains in 14-15 by state
 by_state_14 <- comb %>%
@@ -40,9 +62,14 @@ by_state_14 <- comb %>%
     ) %>%
   arrange(desc(total))
 
-ggplot(data = by_state_14, aes(x = State, y = total)) +
+ggplot(data = by_state_14, aes(reorder(x = State, total), y = total)) +
   geom_bar(stat = "identity") +
-  coord_flip()
+  coord_flip() +
+  labs(
+    title = "Total Due Process Complaints", 
+    subtitle = "2014-2015", 
+    x = "State"
+    )
 ```
 
 ```{r by state in 13-14}
@@ -71,7 +98,8 @@ p <- ggplot(data = filter(
   comb, 
   category == "Due Process Complaints (DPC) Total (3)"), 
   aes(x = Year, y = total)) +
-  geom_boxplot()
+  geom_boxplot() + 
+  labs(title = "Median Total Due Process Complaints")
 
 # Zoom in on totals of less than 500
 p + coord_cartesian(ylim = c(0, 500))
