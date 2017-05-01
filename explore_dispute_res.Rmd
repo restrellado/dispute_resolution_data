@@ -5,11 +5,14 @@ output: html_notebook
 
 # Initial Questions 
 
-Are there any interesting patterns in variation in any of the variables? 
+- Are there any interesting patterns in variation in any of the variables?  
+- What proportion of each dispute total category does each state represent?  
+- Is there a relationship betweent he population of a state and the number of dispute totals?  
 
 ```{r}
 library(tidyverse, verbose = T)
 library(stringr, verbose = T)
+library(maps)
 ```
 
 First, we'll read in the data and combine the 2012 through 2015 datasets into one dataframe. For now, we won't `gather` up the variables so that we can explore the variation in each variable. 
@@ -57,6 +60,12 @@ cnames <- str_trim(cnames, "right")
 names(comb) <- cnames
 ```
 
+We'll also clean up our state names to all lower case to make it easier to plot our map later in the analysis. 
+
+```{r}
+comb$State <- tolower(comb$State)
+```
+
 Let's verify that we have usable classes for each of the variables. 
 
 ```{r}
@@ -93,19 +102,62 @@ For most categories, the median count across all states do not give a good summa
 ```{r}
 # TODO Label max values for each category with the state name
 ggplot(data = g_comb1415) +
-  geom_boxplot(aes(reorder(category, total, FUN = max), y = total)) + 
+  geom_boxplot(aes(x = reorder(category, total, FUN = max), y = total)) + 
   coord_flip(ylim = c(0, 5000)) + 
   labs(
     title = "Distribution of Category Totals", 
     subtitle = "Data: 2014-2015 Dispute Resolution", 
     x = "", 
     y = ""
-    ) + 
-  annotate(
-    "text", 
-    x = g_comb1415$category, 
-    y = max(g_comb1415$total[category]), 
-    label = "test")
+    )
+```
+
+# How are these totals related to each state's population? 
+
+```{r}
+state_pop <- read_csv("state_data/state_pop.csv")
+state_pop$State <- tolower(state_pop$State) # Change state names to lower case
+
+g_comb1415 <- left_join(g_comb1415, state_pop, by = c("State" = "State"))
+```
+
+I do not have population data for the following regions, so for now we will leave them out and will examine them later. In particular, US, Outlying Areas and Freely Associated States has a sizable amount of category totals.
+
+```{r}
+unique(g_comb1415$State[is.na(g_comb1415$Population)])
+```
+
+Note here that not all categories suggest a relationship between a state's population and the total count of that category. 
+
+```{r}
+ggplot(data = g_comb1415) + 
+  geom_point(aes(x = Population, y = total), na.rm = T, alpha = .5) + 
+  geom_smooth(aes(x = Population, y = total)) +
+  coord_cartesian(ylim = c(0, 1000)) +
+  facet_wrap(~ category) + 
+  labs(title = "State Population and Category Counts", 
+       subtitle = "Data: 2014-2015 Dispute Resolution Data")
+```
+
+# Visualizing Totals on a US Map
+
+```{r}
+all_states <- map_data("state")
+disp_map <- left_join(g_comb1415, all_states, by = c("State" = "region"))
+```
+
+Here are how category totals are distributed across states. 
+
+```{r}
+ggplot() +
+  geom_polygon(data=disp_map, 
+               aes(x=long, y=lat), 
+               colour="white", 
+               na.rm = T) + 
+  scale_fill_continuous(low = "thistle2", high = "darkred", guide="colorbar") +
+  theme_bw()  + labs(fill = "Some label", title = "Some title", x="", y="")
+
+P1 + scale_y_continuous(breaks=c()) + scale_x_continuous(breaks=c()) + theme(panel.border =  element_blank())
 ```
 
 First let's plot the variation in each variable.
