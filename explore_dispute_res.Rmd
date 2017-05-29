@@ -90,26 +90,6 @@ comb <- comb %>%
          edpc_withdrawn = `EDPC Withdrawn or Dismissed`)
 ```
 
-Let's clean up the variable names so they are a little more readable. They are still a little long, but we can at least remove the codes and parenthesis that are in the original datasets. 
-
-```{r}
-cnames <- names(comb) %>% 
-  str_replace_all("\\(", "") %>% 
-  str_replace_all("\\)", "") 
-
-for (i in 3:length(cnames)) {
- str_sub(
-  cnames[i],
-  str_locate(cnames[i], regex("[0-9]"))[1, 1], 
-  str_length(cnames[i])
-  ) <- ""
-}
-
-cnames <- str_trim(cnames, "right")
-
-names(comb) <- cnames
-```
-
 ```{r}
 # TODO: Create a new categorical variable for the type of process 
 # (e.g., EDC, mediations, etc.)
