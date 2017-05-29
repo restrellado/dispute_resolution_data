@@ -37,7 +37,7 @@ allfiles <- lapply(fnames, function(x) {
   })
 
 # Combine files
-comb <- bind_rows(allfiles)
+dpr <- bind_rows(allfiles)
 ```
 
 Let's rename the variables to something manageable but still descriptive. 
@@ -52,7 +52,7 @@ We'll use the following conventions:
 ```
 
 ```{r}
-comb <- comb %>% 
+dpr <- dpr %>% 
   rename(# Written signed complaints
          wsc_total = `Written, Signed Complaints (WSC) Total (1)`, 
          wsc_reports = `WSC with Reports Issued Total (1.1)`, 
@@ -98,13 +98,18 @@ comb <- comb %>%
 We'll also clean up our state names to all lower case to make it easier to plot our map later in the analysis. 
 
 ```{r}
-comb$State <- tolower(comb$State)
+dpr$State <- tolower(dpr$State)
 ```
 
 Let's verify that we have usable classes for each of the variables. 
 
 ```{r}
-str(comb)
+str(dpr)
+```
+
+```{r}
+# Clean up unneeded variables 
+rm(list = c("allfiles", "fnames"))
 ```
 
 # Exploring the Data 
@@ -112,21 +117,21 @@ str(comb)
 Here are the counts for the number of observations in each year: 
 
 ```{r}
-count(comb, Year)
+count(dpr, Year)
 ```
 
 There are some really strange values, which might indicate some data errors on 
 the high end. 
 
 ```{r}
-comb1415 <- comb %>% filter(Year == "2014-2015")
-sapply(comb1415[, 3:length(names(comb1415))], function(x) {range(x)})
+dpr1415 <- dpr %>% filter(Year == "2014-2015")
+sapply(dpr1415[, 3:length(names(dpr1415))], function(x) {range(x)})
 ```
 
 Let's gather up the variables into one category for just the 2014-2015 year so we can explore the variation in each one. 
 
 ```{r}
-g_comb1415 <- comb %>% 
+g_dpr1415 <- dpr %>% 
   filter(Year == "2014-2015") %>%
   gather(category, total, -c(Year, State))
 ```
@@ -139,7 +144,7 @@ For most categories, the median count across all states do not give a good summa
 
 ```{r}
 # TODO: Label max values for each category with the state name
-ggplot(data = g_comb1415) +
+ggplot(data = g_dpr1415) +
   geom_boxplot(aes(x = reorder(category, total, FUN = max), y = total)) + 
   coord_flip(ylim = c(0, 5000)) + 
   labs(
@@ -156,19 +161,19 @@ ggplot(data = g_comb1415) +
 state_pop <- read_csv("state_data/state_pop.csv")
 state_pop$State <- tolower(state_pop$State) # Change state names to lower case
 
-g_comb1415 <- left_join(g_comb1415, state_pop, by = c("State" = "State"))
+g_dpr1415 <- left_join(g_dpr1415, state_pop, by = c("State" = "State"))
 ```
 
 I do not have population data for the following regions, so for now we will leave them out and will examine them later. In particular, US, Outlying Areas and Freely Associated States has a sizable amount of category totals.
 
 ```{r}
-unique(g_comb1415$State[is.na(g_comb1415$Population)])
+unique(g_dpr1415$State[is.na(g_dpr1415$Population)])
 ```
 
 Note here that not all categories suggest a relationship between a state's population and the total count of that category. 
 
 ```{r}
-ggplot(data = g_comb1415) + 
+ggplot(data = g_dpr1415) + 
   geom_point(aes(x = Population, y = total), na.rm = T, alpha = .5) + 
   geom_smooth(aes(x = Population, y = total)) +
   coord_cartesian(ylim = c(0, 1000)) +
@@ -181,7 +186,7 @@ ggplot(data = g_comb1415) +
 
 ```{r}
 all_states <- map_data("state")
-disp_map <- left_join(g_comb1415, all_states, by = c("State" = "region"))
+disp_map <- left_join(g_dpr1415, all_states, by = c("State" = "region"))
 ```
 
 Here are how category totals are distributed across states. 
@@ -201,14 +206,14 @@ P1 + scale_y_continuous(breaks=c()) + scale_x_continuous(breaks=c()) + theme(pan
 First let's plot the variation in each variable.
 
 ```{r}
-ggplot(data = g_comb1415, aes(x = total)) + 
+ggplot(data = g_dpr1415, aes(x = total)) + 
   geom_histogram(binwidth = 15) +
   facet_wrap(~ category)
 ```
 
 ```{r by state in 14-15}
 # Total due process complains in 14-15 by state
-by_state_14 <- comb %>%
+by_state_14 <- dpr %>%
   filter(
     Year     == "2014-2015", 
     category == "Due Process Complaints (DPC) Total (3)"
@@ -227,7 +232,7 @@ ggplot(data = by_state_14, aes(reorder(x = State, total), y = total)) +
 
 ```{r by state in 13-14}
 # Total due process complains in 13-14 by state
-by_state_13 <- comb %>%
+by_state_13 <- dpr %>%
   filter(
     Year     == "2013-2014", 
     category == "Due Process Complaints (DPC) Total (3)"
@@ -237,7 +242,7 @@ by_state_13 <- comb %>%
 
 ```{r by state in 12-13}
 # Total due process complains in 12-13 by state
-by_state_12 <- comb %>%
+by_state_12 <- dpr %>%
   filter(
     Year     == "2012-2013", 
     category == "Due Process Complaints (DPC) Total (3)"
@@ -248,7 +253,7 @@ by_state_12 <- comb %>%
 ```{r}
 # What is the median number of due process complaints?
 p <- ggplot(data = filter(
-  comb, 
+  dpr, 
   category == "Due Process Complaints (DPC) Total (3)"), 
   aes(x = Year, y = total)) +
   geom_boxplot() + 
@@ -261,7 +266,7 @@ p + coord_cartesian(ylim = c(0, 500))
 ```{r}
 # TODO Need to find a better way to explore year to year
 #ggplot(data = filter(
-#  comb,
+#  dpr,
 #  category == "Due Process Complaints (DPC) Total (3)"),
 #  aes(x = State, y = total)
 #  ) +
@@ -273,7 +278,7 @@ p + coord_cartesian(ylim = c(0, 500))
 ```{r mediation agreements}
 # What is the relationship between mediations held and mediation agreements?
 # This looks just at mediations relating to due process hearings.
-med <- comb %>%
+med <- dpr %>%
   filter(
     category == "Mediations Held Related to Due Process Complaints(2.1a)" | 
     category == "Mediation Agreements Related to Due Process Complaints (2.1ai)"
