@@ -5,14 +5,17 @@ output: html_notebook
 
 # Initial Questions 
 
+The purpose of this notebook is to clean the federal dispute resolution data so it lends itself a bit better to understanding, exploration, analysis. Some 
+questions to explore are: 
+
 - Are there any interesting patterns in variation in any of the variables?  
 - What proportion of each dispute total category does each state represent?  
-- Is there a relationship betweent he population of a state and the number of dispute totals?  
+- Is there a relationship betweent the population of a state and the number of dispute totals?  
 
 ```{r}
 library(tidyverse, verbose = T)
 library(stringr, verbose = T)
-library(maps)
+library(maps, verbose = T)
 ```
 
 First, we'll read in the data and combine the 2012 through 2015 datasets into one dataframe. For now, we won't `gather` up the variables so that we can explore the variation in each variable. 
@@ -29,15 +32,62 @@ fnames <- c(
 )
 
 # Read files
-allfiles <- lapply(fnames, function(x) {read_csv(
-  x, 
-  skip = 4, 
-  col_types = cols(Year = col_character()), 
-  n_max = 61
-  )})
+allfiles <- lapply(fnames, function(x) {
+  read_csv(x, skip = 4, col_types = cols(Year = col_character()), n_max = 61)
+  })
 
-# Combine
+# Combine files
 comb <- bind_rows(allfiles)
+```
+
+Let's rename the variables to something manageable but still descriptive. 
+We'll use the following conventions:  
+
+- Variables prefixed with `wsc` refer to categories that related to written and signed complaints.  
+- Variables prefixed with `med` refer to categories related to mediations.  
+- Variables prefixed with `edpc` refer to categories related to expedited due process complaints.  
+
+```{r}
+# TODO: Document definitions of variable names or link to variable description
+```
+
+```{r}
+comb <- comb %>% 
+  rename(# Written signed complaints
+         wsc_total = `Written, Signed Complaints WSC Total`, 
+         wsc_reports = `WSC with Reports Issued Total`, 
+         wsc_reports_with_findings = `WSC Reports with Findings`, 
+         wsc_reports_ontime  = `WSC Reports within Timeline`, 
+         wsc_reports_ext_timelines = `WSC Reports within Extended Timelines`, 
+         wsc_pending = `WSC Pending Total`, 
+         wsc_pending_due_proc = `WSC Pending a Due Process Hearing`, 
+         wsc_withdrawn = `WSC Withdrawn or Dismissed`, 
+         # Mediations
+         med_total = `Mediation Requests Total`, 
+         med_held = `Mediations Held Total`, 
+         med_from_due_proc = `Mediations Held Related to Due Process Complaints`, 
+         med_agreed_from_due_proc = `Mediation Agreements Related to Due Process Complaints`, 
+         med_not_from_due_proc = `Mediations Held Not Related to Due Process Complaints`,
+         med_agreed_not_from_due_proc = `Mediation Agreements Not Related to Due Process Complaints`, 
+         med_pending = `Mediations Pending`, 
+         med_withdrawn = `Mediations Withdrawn or Not Held`, 
+         # Due process
+         dpc_total = `Due Process Complaints DPC Total`, 
+         dpc_resolutions = `DPC Resolution Meetings Total`, 
+         dpc_resolutions_settlements = `DPC Resolution Meetings - Written Settlement Agreements`, 
+         dpc_adjudicated = `DPC Hearings fully adjudicated Total`, 
+         dpc_decisions_ontime = `DPC Written Decisions within Timeline`, 
+         dpc_decisions_ext_timeline = `DPC Written Decisions within Extended Timelines`, 
+         dpc_pending = `DPC Pending`, 
+         dpc_withdrawn = `DPC Withdrawn or Dismissed`, 
+         # Expedited due process complaints
+         edpc_total = `Expedited Due Process Complaints EDPC Total`, 
+         edpc_resolutions = `EDPC Resulted in a Resolution Meeting Total`, 
+         edpc_resolutions_settlements = `EDPC Resolution Meetings - Written Settlement Agreements`, 
+         edpc_adjudicated = `EDPC Expedited Hearings fully adjudicated Total`, 
+         edpc_placement_changes = `EDPC Expedited Hearings - Change of Placement Ordered`, 
+         edpc_pending = `EDPC Pending`, 
+         edpc_withdrawn = `EDPC Withdrawn or Dismissed`)
 ```
 
 Let's clean up the variable names so they are a little more readable. They are still a little long, but we can at least remove the codes and parenthesis that are in the original datasets. 
@@ -60,6 +110,11 @@ cnames <- str_trim(cnames, "right")
 names(comb) <- cnames
 ```
 
+```{r}
+# TODO: Create a new categorical variable for the type of process 
+# (e.g., EDC, mediations, etc.)
+```
+
 We'll also clean up our state names to all lower case to make it easier to plot our map later in the analysis. 
 
 ```{r}
@@ -78,7 +133,8 @@ Here are the counts for the number of observations in each year:
 count(comb, Year)
 ```
 
-There are some really strange values, which might indicate some data errors on the high end. 
+There are some really strange values, which might indicate some data errors on 
+the high end. 
 
 ```{r}
 comb1415 <- comb %>% filter(Year == "2014-2015")
@@ -100,7 +156,7 @@ obscures the boxplots so we're going to zoom in to `total` values of 5000 or les
 For most categories, the median count across all states do not give a good summary of any one state's totals. Most categories have states whose totals are uncharacteristically high for that category. 
 
 ```{r}
-# TODO Label max values for each category with the state name
+# TODO: Label max values for each category with the state name
 ggplot(data = g_comb1415) +
   geom_boxplot(aes(x = reorder(category, total, FUN = max), y = total)) + 
   coord_flip(ylim = c(0, 5000)) + 
