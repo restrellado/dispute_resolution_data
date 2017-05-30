@@ -24,12 +24,11 @@ First, we'll read in the data and combine the 2012 through 2015 datasets into on
 fnames <- c(
   "https://www2.ed.gov/programs/osepidea/618-data/state-level-data-files/part-b-data/dispute-resolution/bdispres2014-15.csv",
   "https://www2.ed.gov/programs/osepidea/618-data/state-level-data-files/part-b-data/dispute-resolution/bdispres2013-14.csv", 
-  "https://www2.ed.gov/programs/osepidea/618-data/state-level-data-files/part-b-data/dispute-resolution/bdispres2012-13.csv"#,
+  "https://www2.ed.gov/programs/osepidea/618-data/state-level-data-files/part-b-data/dispute-resolution/bdispres2012-13.csv")
   
-  # Having trouble reading in the first row with these.
-  #"https://www2.ed.gov/programs/osepidea/618-data/state-level-data-files/part-b-data/dispute-resolution/bdispres2011-12.csv",
-  #"https://www2.ed.gov/programs/osepidea/618-data/state-level-data-files/part-b-data/dispute-resolution/bdispres2010-11.csv"
-)
+# TODO: Work on reading these CSVs
+# "https://www2.ed.gov/programs/osepidea/618-data/state-level-data-files/part-b-data/dispute-resolution/bdispres2011-12.csv",
+# "https://www2.ed.gov/programs/osepidea/618-data/state-level-data-files/part-b-data/dispute-resolution/bdispres2010-11.csv"
 
 # Read files
 allfiles <- lapply(fnames, function(x) {
@@ -121,38 +120,43 @@ count(dpr, Year)
 ```
 
 There are some really strange values, which might indicate some data errors on 
-the high end. 
+the high end. We can illustrate that here in the 2014-2015 data. 
 
 ```{r}
-dpr1415 <- dpr %>% filter(Year == "2014-2015")
+dpr1415 <- dpr %>% 
+  filter(Year == "2014-2015")
+
+# Compute the range of each variable
 sapply(dpr1415[, 3:length(names(dpr1415))], function(x) {range(x)})
-```
-
-Let's gather up the variables into one category for just the 2014-2015 year so we can explore the variation in each one. 
-
-```{r}
-g_dpr1415 <- dpr %>% 
-  filter(Year == "2014-2015") %>%
-  gather(category, total, -c(Year, State))
 ```
 
 Let's further explore the strange high values in some of the categories. The 
 outliers are so high and so different from the the rest of the value that it 
 obscures the boxplots so we're going to zoom in to `total` values of 5000 or less.
 
-For most categories, the median count across all states do not give a good summary of any one state's totals. Most categories have states whose totals are uncharacteristically high for that category. 
+For most categories, the median count across all states do not give a good summary of any one state's totals. Most categories have states whose totals are uncharacteristically high for that category. In other words, the categories 
+are characterized by low medians with some states containing noticeable 
+outliers. 
+
+```{r}
+# Gather variables
+dpr_narrow <- dpr %>% 
+  gather(category, total, -c(Year, State))
+```
 
 ```{r}
 # TODO: Label max values for each category with the state name
-ggplot(data = g_dpr1415) +
-  geom_boxplot(aes(x = reorder(category, total, FUN = max), y = total)) + 
+ggplot(data = dpr_narrow) +
+  geom_boxplot(aes(x = reorder(category, total, FUN = max), y = total), 
+               alpha = .5, 
+               color = "cyan4") + 
   coord_flip(ylim = c(0, 5000)) + 
-  labs(
-    title = "Distribution of Category Totals", 
-    subtitle = "Data: 2014-2015 Dispute Resolution", 
-    x = "", 
-    y = ""
-    )
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(title = "Distribution of Category Totals", 
+       subtitle = "Data: State level data from ed.gov", 
+       x = "", 
+       y = "") + 
+  facet_wrap(~Year)
 ```
 
 # How are these totals related to each state's population? 
@@ -161,41 +165,54 @@ ggplot(data = g_dpr1415) +
 state_pop <- read_csv("state_data/state_pop.csv")
 state_pop$State <- tolower(state_pop$State) # Change state names to lower case
 
-g_dpr1415 <- left_join(g_dpr1415, state_pop, by = c("State" = "State"))
+# Join the state population dataset to the dispute resolution dataset
+dpr_pop <- left_join(dpr_narrow, state_pop, by = c("State" = "State"))
 ```
 
 I do not have population data for the following regions, so for now we will leave them out and will examine them later. In particular, US, Outlying Areas and Freely Associated States has a sizable amount of category totals.
 
 ```{r}
-unique(g_dpr1415$State[is.na(g_dpr1415$Population)])
+unique(dpr_pop$State[is.na(dpr_pop$Population)])
+```
+
+```{r}
+# Remove areas that do not have population values 
+dpr_pop <- dpr_pop %>% 
+  filter(!is.na(Population))
 ```
 
 Note here that not all categories suggest a relationship between a state's population and the total count of that category. 
 
 ```{r}
-ggplot(data = g_dpr1415) + 
+ggplot(data = dpr_pop) + 
   geom_point(aes(x = Population, y = total), na.rm = T, alpha = .5) + 
   geom_smooth(aes(x = Population, y = total)) +
   coord_cartesian(ylim = c(0, 1000)) +
   facet_wrap(~ category) + 
   labs(title = "State Population and Category Counts", 
-       subtitle = "Data: 2014-2015 Dispute Resolution Data")
+       subtitle = "Data: State level data from ed.gov")
+```
+
+```{r}
+# TODO: Regress `total` on `Population` for categories with a 
+# possible relationship
 ```
 
 # Visualizing Totals on a US Map
 
 ```{r}
+# TODO: Make map work
 all_states <- map_data("state")
-disp_map <- left_join(g_dpr1415, all_states, by = c("State" = "region"))
+disp_map <- left_join(dpr_pop, all_states, by = c("State" = "region"))
 ```
 
 Here are how category totals are distributed across states. 
 
 ```{r}
 ggplot() +
-  geom_polygon(data=disp_map, 
-               aes(x=long, y=lat), 
-               colour="white", 
+  geom_polygon(data = disp_map, 
+               aes(x = long, y = lat), 
+               colour = "white", 
                na.rm = T) + 
   scale_fill_continuous(low = "thistle2", high = "darkred", guide="colorbar") +
   theme_bw()  + labs(fill = "Some label", title = "Some title", x="", y="")
@@ -206,7 +223,7 @@ P1 + scale_y_continuous(breaks=c()) + scale_x_continuous(breaks=c()) + theme(pan
 First let's plot the variation in each variable.
 
 ```{r}
-ggplot(data = g_dpr1415, aes(x = total)) + 
+ggplot(data = dpr_pop, aes(x = total)) + 
   geom_histogram(binwidth = 15) +
   facet_wrap(~ category)
 ```
