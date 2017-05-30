@@ -198,26 +198,59 @@ ggplot(data = dpr_pop) +
 # possible relationship
 ```
 
-# Visualizing Totals on a US Map
+# Visualizing 2014-2015 Totals on a US Map
 
 ```{r}
-# TODO: Make map work
-all_states <- map_data("state")
-disp_map <- left_join(dpr_pop, all_states, by = c("State" = "region"))
+# Subset the 14-15 data and filter for totals categories 
+dpr_narrow_1415 <- dpr_pop %>% 
+  filter(Year == "2014-2015", 
+         category %in% c("wsc_total", "med_total", "dpc_total", "edpc_total")) %>% 
+  mutate(category = ifelse(category == "wsc_total", "Written Complaints", category), 
+         category = ifelse(category == "med_total", "Mediations", category), 
+         category = ifelse(category == "dpc_total", "Due Process", category), 
+         category = ifelse(category == "edpc_total", "Expedited Due Process", category), 
+         per_capita = 100 * (total / Population))
+```
+
+```{r}
+# TODO: Map fill to per capita total
+all_states <- map_data("state") 
+
+# Merge the states data with dpr data
+dpr_map <- left_join(dpr_narrow_1415, all_states, by = c("State" = "region"))
+
+# Clean data to prepare it for the map plot
+dpr_map <- dpr_map %>% 
+  filter(!is.na(long)) %>%
+  arrange(group, order)
 ```
 
 Here are how category totals are distributed across states. 
 
 ```{r}
-ggplot() +
-  geom_polygon(data = disp_map, 
-               aes(x = long, y = lat), 
-               colour = "white", 
-               na.rm = T) + 
-  scale_fill_continuous(low = "thistle2", high = "darkred", guide="colorbar") +
-  theme_bw()  + labs(fill = "Some label", title = "Some title", x="", y="")
+# Total counts
+ggplot(data = dpr_map, 
+       aes(x = long, y = lat, group = group, fill = total)) +
+  geom_polygon(colour = "white") + 
+  labs(title = "Total Count of 2014-2015 Dispute Events", 
+       subtitle = "Data: State level data from ed.gov", 
+       fill = "", 
+       x = "", 
+       y = "") +
+  facet_wrap(~category)
+```
 
-P1 + scale_y_continuous(breaks=c()) + scale_x_continuous(breaks=c()) + theme(panel.border =  element_blank())
+```{r}
+# Total counts per capita
+ggplot(data = dpr_map, 
+       aes(x = long, y = lat, group = group, fill = per_capita)) +
+  geom_polygon(colour = "white") + 
+  labs(title = "2014-2015 Dispute Events Per Capita", 
+       subtitle = "Data: State level data from ed.gov", 
+       fill = "", 
+       x = "", 
+       y = "") +
+  facet_wrap(~category)
 ```
 
 First let's plot the variation in each variable.
