@@ -107,6 +107,12 @@ str(dpr)
 ```
 
 ```{r}
+# TODO: Upload to data.world
+# Write csv
+write_csv(dpr, path = "output/2012_2015_dispute_resolution.csv")
+```
+
+```{r}
 # Clean up unneeded variables 
 rm(list = c("allfiles", "fnames"))
 ```
@@ -262,25 +268,22 @@ ggplot(data = dpr_pop, aes(x = total)) +
 ```
 
 ```{r by state in 14-15}
-# Total due process complains in 14-15 by state
-by_state_14 <- dpr %>%
-  filter(
-    Year     == "2014-2015", 
-    category == "Due Process Complaints (DPC) Total (3)"
-    ) %>%
-  arrange(desc(total))
+# Total due process complains in 14-15 by state\
+dpc1415 <- dpr %>% 
+  select(Year, State, dpc_total) %>% 
+  filter(Year == "2014-2015") %>%
+  filter(min_rank((desc(dpc_total))) < 10)
 
-ggplot(data = by_state_14, aes(reorder(x = State, total), y = total)) +
+ggplot(data = dpc1415, aes(reorder(x = State, dpc_total), y = dpc_total)) +
   geom_bar(stat = "identity") +
   coord_flip() +
-  labs(
-    title = "Total Due Process Complaints", 
-    subtitle = "2014-2015", 
-    x = "State"
-    )
+  labs(title = "Total Due Process Complaints", 
+       subtitle = "2014-2015", 
+       x = "", y = "Total Due Process Hearings")
 ```
 
 ```{r by state in 13-14}
+# TODO: Fix to accommodate new cleaning method
 # Total due process complains in 13-14 by state
 by_state_13 <- dpr %>%
   filter(
@@ -291,6 +294,7 @@ by_state_13 <- dpr %>%
 ```
 
 ```{r by state in 12-13}
+# TODO: Fix to accommodate new cleaning method
 # Total due process complains in 12-13 by state
 by_state_12 <- dpr %>%
   filter(
@@ -301,6 +305,7 @@ by_state_12 <- dpr %>%
 ```
 
 ```{r}
+# TODO: Fix to accommodate new cleaning method
 # What is the median number of due process complaints?
 p <- ggplot(data = filter(
   dpr, 
@@ -326,6 +331,7 @@ p + coord_cartesian(ylim = c(0, 500))
 ```
 
 ```{r mediation agreements}
+# TODO: Fix to accommodate new cleaning method
 # What is the relationship between mediations held and mediation agreements?
 # This looks just at mediations relating to due process hearings.
 med <- dpr %>%
