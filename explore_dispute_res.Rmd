@@ -47,10 +47,6 @@ We'll use the following conventions:
 - Variables prefixed with `edpc` refer to categories related to expedited due process complaints.  
 
 ```{r}
-# TODO: Document definitions of variable names or link to variable description
-```
-
-```{r}
 dpr <- dpr %>% 
   rename(# Written signed complaints
          wsc_total = `Written, Signed Complaints (WSC) Total (1)`, 
