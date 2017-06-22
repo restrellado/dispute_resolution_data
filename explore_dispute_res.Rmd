@@ -103,7 +103,6 @@ str(dpr)
 ```
 
 ```{r}
-# TODO: Upload to data.world
 # Write csv
 write_csv(dpr, path = "output/2012_2015_dispute_resolution.csv")
 ```
@@ -279,36 +278,21 @@ ggplot(data = dpc1415, aes(reorder(x = State, dpc_total), y = dpc_total)) +
 ```
 
 ```{r by state in 13-14}
-# TODO: Fix to accommodate new cleaning method
+# TODO: Include other years and spread by year
 # Total due process complains in 13-14 by state
 by_state_13 <- dpr %>%
-  filter(
-    Year     == "2013-2014", 
-    category == "Due Process Complaints (DPC) Total (3)"
-    ) %>%
-  arrange(desc(total))
-```
-
-```{r by state in 12-13}
-# TODO: Fix to accommodate new cleaning method
-# Total due process complains in 12-13 by state
-by_state_12 <- dpr %>%
-  filter(
-    Year     == "2012-2013", 
-    category == "Due Process Complaints (DPC) Total (3)"
-    ) %>%
-  arrange(desc(total))
+  filter(Year == "2013-2014") %>% 
+  select(Year, State, dpc_total) %>% 
+  arrange(desc(dpc_total))
 ```
 
 ```{r}
-# TODO: Fix to accommodate new cleaning method
 # What is the median number of due process complaints?
-p <- ggplot(data = filter(
-  dpr, 
-  category == "Due Process Complaints (DPC) Total (3)"), 
-  aes(x = Year, y = total)) +
+p <- ggplot(data = dpr, aes(x = Year, y = dpc_total)) +
   geom_boxplot() + 
-  labs(title = "Median Total Due Process Complaints")
+  labs(title = "Median Total Due Process Complaints", 
+       subtitle = "Data: Federal Dispute Resolution Data", 
+       y = "")
 
 # Zoom in on totals of less than 500
 p + coord_cartesian(ylim = c(0, 500))
