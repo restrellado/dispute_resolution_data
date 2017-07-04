@@ -311,34 +311,17 @@ p + coord_cartesian(ylim = c(0, 500))
 ```
 
 ```{r mediation agreements}
-# TODO: Fix to accommodate new cleaning method
 # What is the relationship between mediations held and mediation agreements?
 # This looks just at mediations relating to due process hearings.
-med <- dpr %>%
-  filter(
-    category == "Mediations Held Related to Due Process Complaints(2.1a)" | 
-    category == "Mediation Agreements Related to Due Process Complaints (2.1ai)"
-  ) %>%
-  spread(key = category, value = total)
-
-med_plot <- ggplot(data = med) +
-  geom_point(aes(
-    x = `Mediations Held Related to Due Process Complaints(2.1a)`, 
-    y = `Mediation Agreements Related to Due Process Complaints (2.1ai)`
-  ), 
-    position = "jitter",
-    alpha = .50) + 
-  geom_smooth(aes(
-  x = `Mediations Held Related to Due Process Complaints(2.1a)`, 
-  y = `Mediation Agreements Related to Due Process Complaints (2.1ai)`
-  )) +
+med_plot <- ggplot(data = dpr,
+                   aes(x = med_from_due_proc, y = med_agreed_from_due_proc)) +
+  geom_point(position = "jitter", alpha = .50) + 
+  geom_smooth() +
   facet_wrap(~ Year) +
-  labs(
-    title    = "Mediations Held vs. Mediation Agreements",
-    subtitle = "Dataset includes only mediations related to due process complaints.",
-    x        = "Mediations held relating to due process", 
-    y        = "Agreements reached"
-    )
+  labs(title    = "Mediations Held vs. Mediation Agreements",
+       subtitle = "Dataset includes only mediations related to due process complaints.",
+       x = "Mediations held relating to due process", 
+       y = "Agreements reached")
 
 # Zoom in on x < 1000 and 6 < 500
 med_plot + coord_cartesian(xlim = c(0, 1000), ylim = c(0, 500))
