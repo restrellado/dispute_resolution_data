@@ -316,8 +316,12 @@ p + coord_cartesian(ylim = c(0, 500))
 med_plot <- ggplot(data = dpr,
                    aes(x = med_from_due_proc, y = med_agreed_from_due_proc)) +
   geom_point(position = "jitter", alpha = .50) + 
-  geom_smooth() +
-  facet_wrap(~ Year) +
+  geom_smooth() + 
+  facet_wrap(~ Year) + 
+  annotate("text", 
+           x = dpr$med_from_due_proc[dpr$State == "new jersey" & dpr$Year == "2012-2013"] * 1.75, 
+           y = dpr$med_agreed_from_due_proc[dpr$State == "new jersey" & dpr$Year == "2012-2013"], 
+           label = "New Jersey") +
   labs(title    = "Mediations Held vs. Mediation Agreements",
        subtitle = "Dataset includes only mediations related to due process complaints.",
        x = "Mediations held relating to due process", 
